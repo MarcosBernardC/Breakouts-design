@@ -1,0 +1,30 @@
+Commercial License — Breakouts Design by Bernard
+Copyright (c) 2025 Bernard
+
+This hardware design, including PCB layouts, mechanical models, and associated
+documentation (the “Design”), is available for non-commercial use under the
+terms of the MPL-2.0 license.
+
+Commercial Use Restriction:
+-------------------------------------
+Any commercial use of the Design — including but not limited to:
+• manufacturing of the hardware,
+• distribution of assembled or unassembled PCBs,
+• sale of products derived from the Design,
+• incorporation of the Design into commercial products,
+
+requires a separate written commercial license from the copyright holder
+(Bernard).
+
+No entity or individual is permitted to sell or distribute hardware based on
+this Design without explicit authorization.
+
+Contribution Clause:
+-------------------------------------
+Contributions to the Design made under the MPL-2.0 may be incorporated by the
+copyright holder into commercial versions of the hardware without requiring
+additional permission from contributors.
+
+Contact:
+-------------------------------------
+For commercial licensing, email: bernardlab.dev@gmail.com

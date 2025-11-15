@@ -1,0 +1,13 @@
+# FreeCAD output
+**/build/
+**/*.FCStd
+**/*.FCBak
+**/*.stl
+
+# Python
+**/__pycache__/
+*.o
+*.pyc
+
+# Archivos temporales
+*~
