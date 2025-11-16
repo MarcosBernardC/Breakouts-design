@@ -3,12 +3,9 @@ import Part
 import Import
 import os
 
-# GUI opcional
-try:
+GUI = App.GuiUp
+if GUI:
     import FreeCADGui as Gui
-    GUI = True
-except:
-    GUI = False
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BUILD_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "build"))
@@ -39,10 +36,20 @@ BORDE = 0.5
 
 doc = App.newDocument("BME280_Breakout")
 
-# --- PCB base ---
+# --- Metadata de pinout ---
+PIN_NAMES = ["VIN", "GND", "SCL", "SDA"]
+pinmeta = doc.addObject("App::FeaturePython", "PinMeta")
+pinmeta.addProperty("App::PropertyStringList", "Names", "Pinout", "Pin names")
+pinmeta.Names = PIN_NAMES
+
+# ============================
+#   CONSTRUCCIÓN COMPLETA
+# ============================
+
+# PCB base
 pcb = Part.makeBox(L, A, E)
 
-# --- Agujeros ---
+# --- Agujeros de pines ---
 total = (N - 1) * P
 start_x = (L - total) / 2.0
 radio_pin = D / 2.0
@@ -53,35 +60,22 @@ for i in range(N):
     hole = Part.makeCylinder(radio_pin, E, App.Vector(x, y, 0))
     pcb = pcb.cut(hole)
 
-pcb_obj = doc.addObject("Part::Feature", "PCB")
-pcb_obj.Shape = pcb
-
-if GUI:
-    pcb_obj.ViewObject.ShapeColor = (0.55, 0.00, 0.45)
-
 # --- Agujero grande con borde metálico ---
 radio_aguj = AGUJERO_D / 2.0
 radio_ext = radio_aguj + BORDE
 
 aro_x = ((L - (2 * radio_ext)) / 2.0) + 0.5
 aro_y = A - radio_ext - 0.6
-aro_z = 0
 
-anillo = Part.makeCylinder(radio_ext, E, App.Vector(aro_x, aro_y, aro_z))
-hueco  = Part.makeCylinder(radio_aguj, E, App.Vector(aro_x, aro_y, aro_z))
+anillo = Part.makeCylinder(radio_ext, E, App.Vector(aro_x, aro_y, 0))
+hueco  = Part.makeCylinder(radio_aguj, E, App.Vector(aro_x, aro_y, 0))
 borde_metalico = anillo.cut(hueco)
 
 pcb = pcb.cut(hueco)
-pcb = pcb.fuse(borde_metalico)
-
-pcb_obj.Shape = pcb
 
 # --- Sensor metálico ---
-aro_cx = aro_x
-aro_cy = aro_y
-
-sensor_x = aro_cx + radio_ext + 1.5
-sensor_y = aro_cy - (S_A / 2.0) + 1
+sensor_x = aro_x + radio_ext + 1.5
+sensor_y = aro_y - (S_A / 2.0) + 1
 sensor_z = E
 
 if sensor_x + S_L > L - 0.5:
@@ -96,27 +90,41 @@ if sensor_y < 0.5:
 sensor = Part.makeBox(S_L, S_A, S_E)
 sensor.translate(App.Vector(sensor_x, sensor_y, sensor_z))
 
+# ============================
+#   CREACIÓN DE OBJETOS
+# ============================
+
+pcb_obj = doc.addObject("Part::Feature", "PCB")
+borde_obj = doc.addObject("Part::Feature", "BordeMetalico")
 sensor_obj = doc.addObject("Part::Feature", "BME280_Sensor")
+
+pcb_obj.Shape = pcb
+borde_obj.Shape = borde_metalico
 sensor_obj.Shape = sensor
 
+# Colores solo si hay GUI
 if GUI:
+    pcb_obj.ViewObject.ShapeColor = (0.55, 0.00, 0.45)
+    borde_obj.ViewObject.ShapeColor = (0.65, 0.65, 0.65)
     sensor_obj.ViewObject.ShapeColor = (0.75, 0.75, 0.75)
+    borde_obj.ViewObject.DisplayMode = "Shaded"
 
-# --- Final ---
 doc.recompute()
 
-# Guardar
+# ============================
+#   EXPORTACIÓN
+# ============================
+
 fcstd_path = os.path.join(BUILD_DIR, "bme280.FCStd")
 stl_path   = os.path.join(BUILD_DIR, "bme280.stl")
 
 doc.saveAs(fcstd_path)
-Import.export([sensor_obj], stl_path)
+Import.export([pcb_obj, borde_obj, sensor_obj], stl_path)
 
 print("✔ BME280 generado:")
 print("   FCStd:", fcstd_path)
 print("   STL :", stl_path)
 
-# Vista opcional
 if GUI:
     try:
         Gui.activeDocument().activeView().viewIsometric()
