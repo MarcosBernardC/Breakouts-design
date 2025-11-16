@@ -13,7 +13,8 @@ doc = App.newDocument("TestCLI")
 
 # --- Hacer sólido ---
 cube = Part.makeBox(10, 10, 10)
-obj = doc.addObject("Part::Feature", "Cubo")
+# Usar "PCB" como nombre para compatibilidad con obtain_holes.py
+obj = doc.addObject("Part::Feature", "PCB")
 obj.Shape = cube
 
 # --- Registrar documento (CRÍTICO en CLI) ---
@@ -24,7 +25,9 @@ App.ActiveDocument = doc
 doc.recompute()
 
 # --- Guardar FCStd ---
-fcstd_path = os.path.join(BUILD_DIR, "cubo.FCStd")
+# Usar el nombre del módulo (test) para el archivo FCStd
+module_name = os.path.basename(os.path.dirname(BASE_DIR))
+fcstd_path = os.path.join(BUILD_DIR, f"{module_name}.FCStd")
 print("Guardando FCStd en:", fcstd_path)
 doc.saveAs(fcstd_path)
 

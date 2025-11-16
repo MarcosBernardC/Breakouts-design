@@ -67,11 +67,28 @@ radio_ext = radio_aguj + BORDE
 aro_x = ((L - (2 * radio_ext)) / 2.0) + 0.5
 aro_y = A - radio_ext - 0.6
 
-anillo = Part.makeCylinder(radio_ext, E, App.Vector(aro_x, aro_y, 0))
-hueco  = Part.makeCylinder(radio_aguj, E, App.Vector(aro_x, aro_y, 0))
-borde_metalico = anillo.cut(hueco)
+# Crear borde metálico como anillo plano sobre la PCB (no un objeto 3D)
+# Es un disco con un hueco, posicionado en la superficie superior de la PCB
+# Grosor muy delgado para que sea solo una superficie
+GROSOR_BORDE = 0.1  # Muy delgado, solo para dar volumen mínimo
 
-pcb = pcb.cut(hueco)
+# Crear anillo exterior (disco delgado sobre la superficie de la PCB)
+disco_ext = Part.makeCylinder(radio_ext, GROSOR_BORDE, App.Vector(aro_x, aro_y, E))
+# Crear hueco interior (más profundo para asegurar el corte)
+hueco_int = Part.makeCylinder(radio_aguj, GROSOR_BORDE + 0.1, App.Vector(aro_x, aro_y, E - 0.05))
+# Borde metálico = disco exterior menos hueco interior (anillo plano)
+borde_metalico = disco_ext.cut(hueco_int)
+
+# Validar y limpiar la forma
+if not borde_metalico.isNull() and len(borde_metalico.Solids) > 0:
+    borde_metalico = borde_metalico.removeSplitter()
+else:
+    print("⚠ Advertencia: Borde metálico inválido")
+
+
+# Crear el hueco en la PCB (necesario para cortar la PCB)
+hueco_pcb = Part.makeCylinder(radio_aguj, E, App.Vector(aro_x, aro_y, 0))
+pcb = pcb.cut(hueco_pcb)
 
 # --- Sensor metálico ---
 sensor_x = aro_x + radio_ext + 1.5
