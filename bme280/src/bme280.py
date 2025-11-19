@@ -119,11 +119,25 @@ pcb_obj.Shape = pcb
 borde_obj.Shape = borde_metalico
 sensor_obj.Shape = sensor
 
-# Colores solo si hay GUI
+# Añadir propiedad de color personalizada para exportación
+for obj in [pcb_obj, borde_obj, sensor_obj]:
+    obj.addProperty("App::PropertyColor", "Color", "Base", "Object color")
+
+# Definir colores
+pcb_color = (0.55, 0.00, 0.45)
+borde_color = (0.65, 0.65, 0.65)
+sensor_color = (0.75, 0.75, 0.75)
+
+# Asignar colores a la propiedad (siempre)
+pcb_obj.Color = pcb_color
+borde_obj.Color = borde_color
+sensor_obj.Color = sensor_color
+
+# Colores visuales (solo si hay GUI)
 if GUI:
-    pcb_obj.ViewObject.ShapeColor = (0.55, 0.00, 0.45)
-    borde_obj.ViewObject.ShapeColor = (0.65, 0.65, 0.65)
-    sensor_obj.ViewObject.ShapeColor = (0.75, 0.75, 0.75)
+    pcb_obj.ViewObject.ShapeColor = pcb_color
+    borde_obj.ViewObject.ShapeColor = borde_color
+    sensor_obj.ViewObject.ShapeColor = sensor_color
     borde_obj.ViewObject.DisplayMode = "Shaded"
 
 doc.recompute()
