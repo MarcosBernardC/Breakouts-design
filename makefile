@@ -31,7 +31,7 @@ MODULES_FOOTPRINT := $(addsuffix _footprint,$(MODULES))
 OBTAIN_HOLES := gen/obtain_holes.py
 MAKE_FOOTPRINT := gen/make_footprint.py
 
-.PHONY: $(MODULES) $(MODULES_GUI) $(MODULES_HOLES) $(MODULES_FOOTPRINT) $(MODULES_STEPS) help normalize list-modules holes footprints steps
+.PHONY: $(MODULES) $(MODULES_GUI) $(MODULES_HOLES) $(MODULES_FOOTPRINT) $(MODULES_STEPS) $(MODULES_WRL) help normalize list-modules holes footprints steps wrl
 
 
 # ======================================
@@ -77,9 +77,11 @@ help:
 	@echo "  make <modulo>_holes     - Genera gen/<modulo>_holes.json desde FCStd"
 	@echo "  make <modulo>_footprint - Genera gen/<modulo>_auto.kicad_mod desde holes.json"
 	@echo "  make <modulo>_steps      - Exporta <modulo>/build/<modulo>.step desde FCStd"
+	@echo "  make <modulo>_wrl        - Exporta <modulo>/build/<modulo>.wrl desde FCStd"
 	@echo "  make holes               - Genera holes.json para todos los módulos"
 	@echo "  make footprints          - Genera footprints para todos los módulos"
 	@echo "  make steps               - Exporta STEPs para todos los módulos"
+	@echo "  make wrl                 - Exporta WRLs para todos los módulos"
 	@echo "  make normalize           - Normaliza estructura de todos los módulos"
 	@echo "  make list-modules       - Lista todos los módulos detectados"
 	@echo ""
@@ -266,3 +268,37 @@ $(MODULES_STEPS):
 # ======================================
 steps: $(MODULES_STEPS)
 	@echo "✔ Todos los archivos STEP generados."
+
+
+# ======================================
+#   EXPORTACIÓN DE ARCHIVOS WRL
+# ======================================
+MODULES_WRL := $(addsuffix _wrl,$(MODULES))
+
+$(MODULES_WRL):
+	@mod=$$(echo "$@" | sed 's/_wrl$$//'); \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+	echo "  Exportando WRL para: $$mod"; \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+	FCSTD="$$mod/build/$$mod.FCStd"; \
+	OUT_WRL="$$mod/build/$$mod.wrl"; \
+	if [ ! -f "$$FCSTD" ]; then \
+		echo "❌ ERROR: No existe $$FCSTD"; \
+		echo "   Ejecuta 'make $$mod' primero para generar el archivo FCStd."; \
+		exit 1; \
+	fi; \
+	echo ">>> Exportando $$FCSTD → $$OUT_WRL"; \
+	FCSTD_FILE="$$FCSTD" OUT_WRL_FILE="$$OUT_WRL" $(PYTHON_HEADLESS) -c "exec(open('gen/export_wrl.py').read())"; \
+	if [ -f "$$OUT_WRL" ]; then \
+		echo "✔ WRL generado: $$OUT_WRL"; \
+	else \
+		echo "❌ ERROR: No se generó el archivo WRL"; \
+		exit 1; \
+	fi
+
+
+# ======================================
+#   EXPORTAR WRLS PARA TODOS LOS MÓDULOS
+# ======================================
+wrl: $(MODULES_WRL)
+	@echo "✔ Todos los archivos WRL generados."
