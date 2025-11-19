@@ -76,13 +76,14 @@ help:
 	@echo "  make <modulo>_gui       - Ejecuta módulo con GUI (freecad)"
 	@echo "  make <modulo>_holes     - Genera gen/<modulo>_holes.json desde FCStd"
 	@echo "  make <modulo>_footprint - Genera gen/<modulo>_auto.kicad_mod desde holes.json"
-	@echo "  make <modulo>_steps      - Exporta <modulo>/build/<modulo>.step desde FCStd"
-	@echo "  make <modulo>_wrl        - Exporta <modulo>/build/<modulo>.wrl desde FCStd"
-	@echo "  make holes               - Genera holes.json para todos los módulos"
-	@echo "  make footprints          - Genera footprints para todos los módulos"
-	@echo "  make steps               - Exporta STEPs para todos los módulos"
-	@echo "  make wrl                 - Exporta WRLs para todos los módulos"
-	@echo "  make normalize           - Normaliza estructura de todos los módulos"
+	@echo "  make <modulo>_steps     - Exporta <modulo>/build/<modulo>.step desde FCStd"
+	@echo "  make <modulo>_wrl       - Exporta <modulo>/build/<modulo>.wrl desde FCStd"
+	@echo "  make <modulo>_all       - Ejecuta: make <modulo> + _holes + _footprint + _wrl"
+	@echo "  make holes              - Genera holes.json para todos los módulos"
+	@echo "  make footprints         - Genera footprints para todos los módulos"
+	@echo "  make steps              - Exporta STEPs para todos los módulos"
+	@echo "  make wrl                - Exporta WRLs para todos los módulos"
+	@echo "  make normalize          - Normaliza estructura de todos los módulos"
 	@echo "  make list-modules       - Lista todos los módulos detectados"
 	@echo ""
 	@echo "Módulos detectados:"
@@ -302,3 +303,25 @@ $(MODULES_WRL):
 # ======================================
 wrl: $(MODULES_WRL)
 	@echo "✔ Todos los archivos WRL generados."
+
+# ======================================
+#   TARGETS COMBINADOS POR MÓDULO
+# ======================================
+MODULES_ALL := $(addsuffix _all,$(MODULES))
+
+# Target para ejecutar toda la pipeline para un módulo específico
+$(MODULES_ALL):
+	@mod=$$(echo "$@" | sed 's/_all$$//'); \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+	echo "  Ejecutando pipeline completa para: $$mod"; \
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+	$(MAKE) $$mod && \
+	$(MAKE) $${mod}_holes && \
+	$(MAKE) $${mod}_footprint && \
+	$(MAKE) $${mod}_wrl; \
+	echo "✔ Pipeline completa ejecutada para $$mod"
+
+# Target específico para bme280_all (y cualquier otro módulo)
+bme280_all: $(filter bme280_all,$(MODULES_ALL))
+
+.PHONY: $(MODULES_ALL) bme280_all

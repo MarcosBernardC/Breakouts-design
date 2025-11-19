@@ -1,77 +1,98 @@
 #!/usr/bin/env python3
 import json
-import os
 import sys
 from pathlib import Path
 
 # -----------------------------
-#  Parámetros desde línea de comandos
+#  Parámetros CLI
 # -----------------------------
 if len(sys.argv) < 2:
-    print("Uso: python3 make_footprint.py <holes.json> [output.kicad_mod]")
-    print("  Ejemplo: python3 make_footprint.py gen/bme280_holes.json gen/bme280_auto.kicad_mod")
+    print("Uso: python3 make_footprint.py <holes.json> [basename]")
     sys.exit(1)
 
 HOLES_JSON = Path(sys.argv[1]).resolve()
 if not HOLES_JSON.exists():
     raise FileNotFoundError(f"No existe {HOLES_JSON}")
 
-# Archivo de salida (opcional)
+# Basename opcional
 if len(sys.argv) >= 3:
-    OUT_FOOT = Path(sys.argv[2]).resolve()
+    BASENAME = Path(sys.argv[2]).with_suffix("").resolve()
 else:
-    # Por defecto: mismo directorio, cambiar extensión
-    OUT_FOOT = HOLES_JSON.with_suffix(".kicad_mod")
+    BASENAME = HOLES_JSON.with_suffix("")
 
 # -----------------------------
-#  Leer datos de agujeros
+#  Leer JSON
 # -----------------------------
 with open(HOLES_JSON, "r") as f:
     data = json.load(f)
 
 pins = data.get("pins", [])
-
-# Verificar si hay pines
-if len(pins) == 0:
-    print("⚠ No hay pines en el archivo JSON. No se puede generar footprint.")
-    print(f"  → {HOLES_JSON}")
+if not pins:
+    print("⚠ No hay pines en el JSON.")
     sys.exit(0)
 
 # -----------------------------
-#  Generar footprint KiCad
+#  Funciones generadoras
 # -----------------------------
-# Extraer nombre del módulo desde el nombre del archivo
-# Ej: bme280_holes.json -> BME280_auto
+def make_label_footprint(module_name, pins):
+    lines = []
+    lines.append(f'(footprint "{module_name}_label" (version 20240115)')
+    lines.append('  (generator "TARS")')
+
+    for idx, p in enumerate(pins, start=1):
+        name = p.get("name") or f"PIN{idx}"
+        x, y, d = p["x"], p["y"], p["diameter"]
+
+        lines.append(
+            f'  (pad "{name}" thru_hole circle '
+            f'(at {x} {y}) (size {d+0.4} {d+0.4}) (drill {d}) '
+            f'(layers "*.Cu" "*.Mask"))'
+        )
+
+    lines.append(")")
+    return "\n".join(lines)
+
+
+def make_num_footprint(module_name, pins):
+    lines = []
+    lines.append(f'(footprint "{module_name}_num" (version 20240115)')
+    lines.append('  (generator "TARS")')
+
+    for idx, p in enumerate(pins, start=1):
+        pad_name = str(idx)
+        x, y, d = p["x"], p["y"], p["diameter"]
+
+        lines.append(
+            f'  (pad "{pad_name}" thru_hole circle '
+            f'(at {x} {y}) (size {d+0.4} {d+0.4}) (drill {d}) '
+            f'(layers "*.Cu" "*.Mask"))'
+        )
+
+    lines.append(")")
+    return "\n".join(lines)
+
+
+# -----------------------------
+#  Preparar nombres
+# -----------------------------
 module_name = HOLES_JSON.stem.replace("_holes", "").upper()
 
-# KiCad usa mm, perfecto
-lines = []
-lines.append(f'(footprint "{module_name}_auto" (version 20240115)')
-lines.append('  (generator "TARS")')
+LABEL_OUT = BASENAME.with_name(BASENAME.name + "_label.kicad_mod")
+NUM_OUT   = BASENAME.with_name(BASENAME.name + "_num.kicad_mod")
 
-for i, p in enumerate(pins, start=1):
-    name = p.get("name") if p.get("name") else f"PIN{i}"
-    x = p["x"]
-    y = p["y"]
-    d = p["diameter"]
-
-    pad = (
-        f'  (pad "{name}" thru_hole circle '
-        f'(at {x} {y}) (size {d+0.4} {d+0.4}) (drill {d}) '
-        f'(layers "*.Cu" "*.Mask"))'
-    )
-
-    lines.append(pad)
-
-lines.append(")")
+LABEL_OUT.parent.mkdir(parents=True, exist_ok=True)
+NUM_OUT.parent.mkdir(parents=True, exist_ok=True)
 
 # -----------------------------
-#  Guardar footprint
+#  Guardar ambos footprints
 # -----------------------------
-OUT_FOOT.parent.mkdir(parents=True, exist_ok=True)
-with open(OUT_FOOT, "w") as f:
-    f.write("\n".join(lines))
+with open(LABEL_OUT, "w") as f:
+    f.write(make_label_footprint(module_name, pins))
 
-print("✔ Footprint generado:")
-print(f"  → {OUT_FOOT}")
+with open(NUM_OUT, "w") as f:
+    f.write(make_num_footprint(module_name, pins))
+
+print("✔ Footprints generados:")
+print(f"  → {LABEL_OUT}")
+print(f"  → {NUM_OUT}")
 print(f"  Pines: {len(pins)}")

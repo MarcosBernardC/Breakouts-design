@@ -1,4 +1,4 @@
-(footprint "BME280_auto" (version 20240115)
+(footprint "BME280_label" (version 20240115)
   (generator "TARS")
   (pad "VIN" thru_hole circle (at 1.19 1.4) (size 1.6 1.6) (drill 1.2) (layers "*.Cu" "*.Mask"))
   (pad "GND" thru_hole circle (at 3.73 1.4) (size 1.6 1.6) (drill 1.2) (layers "*.Cu" "*.Mask"))
