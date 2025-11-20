@@ -44,14 +44,14 @@ if GUI:
 # ============================
 #   PORTAPILAS (cilindro + cavidad)
 # ============================
-CR_D = 20.0   # diámetro exterior
+CR_D = 21.0   # diámetro exterior
 CR_H = 5.0    # altura
 
 cr_radius = CR_D / 2
 cr_cyl = Part.makeCylinder(cr_radius, CR_H)
 
 # Cavidad interna
-CAV_D = 18.5
+CAV_D = 20.5
 CAV_H = 3.0
 cav_radius = CAV_D / 2
 
@@ -245,25 +245,35 @@ for i in range(N_HOLES):
     pads_objs.append(pad_obj)
 
 # ============================
-#   PILA CR2032 (modo seguro)
+#   PILA CR2032 (posicionada con precisión)
 # ============================
 
-BAT_D = 19.0
+BAT_D = 20.0
 BAT_R = BAT_D / 2
 BAT_H = 3.2
 
 battery = Part.makeCylinder(BAT_R, BAT_H)
 
-# posición (misma lógica)
-bx = housing_x + HOUSING_L/2
-by = housing_y - HOUSING_W - 14
-bz = -HOUSING_H + 5
+# Centro exacto del portapilas
+cx = cr_x + cr_radius
+cy = cr_y + cr_radius
 
-battery.translate(App.Vector(bx, by, bz))
+# Ajuste de cavidad más real
+CAV_D = 20.0
+CAV_H = 3.2
+
+# Nueva base correcta
+z_base = cr_z + (CR_H - CAV_H)
+
+# Centro geométrico de la pila
+bz = z_base + BAT_H/2 - 2
+
+battery.translate(App.Vector(cx - BAT_R, cy - BAT_R, bz))
 
 bat_obj = doc.addObject("Part::Feature", "Battery_CR2032")
 bat_obj.Shape = battery
 bat_obj.ViewObject.ShapeColor = (0.7, 0.7, 0.7)
+
 
 
 
