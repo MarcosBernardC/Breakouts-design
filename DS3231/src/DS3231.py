@@ -9,7 +9,7 @@ if GUI:
     import FreeCADGui as Gui
 
 # ============================
-#   CONFIGuración
+#   CONFIGURACIÓN
 # ============================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BUILD_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "build"))
@@ -19,8 +19,8 @@ os.makedirs(BUILD_DIR, exist_ok=True)
 #   PARÁMETROS PCB
 # ============================
 L = 21.0   # largo
-A = 36.0   # ancho
-E = 1      # espesor
+A = 37.0   # ancho
+E = 1.0    # espesor
 
 # ============================
 #   DOCUMENTO
@@ -35,7 +35,7 @@ pcb = Part.makeBox(L, A, E)
 pcb_obj = doc.addObject("Part::Feature", "PCB")
 pcb_obj.Shape = pcb
 
-pcb_color = (0.1, 0.3, 0.9)
+pcb_color = (0.10, 0.18, 0.24)  # Azul oscuro realista
 pcb_obj.addProperty("App::PropertyColor", "Color", "Base", "Object color")
 pcb_obj.Color = pcb_color
 if GUI:
@@ -149,7 +149,15 @@ for i in range(N_HOLES):
     # añadir al documento
     p_obj = doc.addObject("Part::Feature", f"Pin_{i+1}")
     p_obj.Shape = pin
-    p_obj.ViewObject.ShapeColor = (0.9, 0.85, 0.3)  # doradito
+    
+    # Color property (siempre)
+    p_obj.addProperty("App::PropertyColor", "Color", "Base", "Object color")
+    p_obj.Color = (0.9, 0.85, 0.3)  # doradito
+    
+    # ViewObject solo si hay GUI
+    if GUI:
+        p_obj.ViewObject.ShapeColor = (0.9, 0.85, 0.3)
+    
     pin_objs.append(p_obj)
 
 # ============================
@@ -184,7 +192,6 @@ housing.translate(App.Vector(housing_x, housing_y, housing_z))
 holes_for_housing = []
 
 for i in range(N_HOLES):
-
     # La posición global del pin NO cambia
     hx_pin = hx0 + i * HOLE_SPACING
 
@@ -206,10 +213,17 @@ for h in holes_for_housing:
 # Añadir al documento
 housing_obj = doc.addObject("Part::Feature", "Pin_Header_Housing")
 housing_obj.Shape = housing_real
-housing_obj.ViewObject.ShapeColor = (0.05, 0.05, 0.05)
+
+# Color property (siempre)
+housing_obj.addProperty("App::PropertyColor", "Color", "Base", "Object color")
+housing_obj.Color = (0.05, 0.05, 0.05)
+
+# ViewObject solo si hay GUI
+if GUI:
+    housing_obj.ViewObject.ShapeColor = (0.05, 0.05, 0.05)
 
 # ============================
-#   ANILLOS DE SOLDADURA (CENTRADOS)
+#   ANILLOS DE SOLDADURA (PADS)
 # ============================
 
 PAD_OD = 1.6
@@ -233,19 +247,23 @@ for i in range(N_HOLES):
     ring = outer.cut(inner)
 
     # mover el anillo a su posición exacta
-    ring.translate(App.Vector(
-        hx,     # centro exacto del agujero
-        hy,
-        E       # sobre la PCB
-    ))
+    ring.translate(App.Vector(hx, hy, E))  # sobre la PCB
 
     pad_obj = doc.addObject("Part::Feature", f"Pad_{i+1}")
     pad_obj.Shape = ring
-    pad_obj.ViewObject.ShapeColor = (0.9, 0.45, 0.1)
+    
+    # Color property (siempre)
+    pad_obj.addProperty("App::PropertyColor", "Color", "Base", "Object color")
+    pad_obj.Color = (0.80, 0.75, 0.65)  # Dorado/cobre
+    
+    # ViewObject solo si hay GUI
+    if GUI:
+        pad_obj.ViewObject.ShapeColor = (0.80, 0.75, 0.65)
+    
     pads_objs.append(pad_obj)
 
 # ============================
-#   PILA CR2032 (posicionada con precisión)
+#   PILA CR2032
 # ============================
 
 BAT_D = 20.0
@@ -258,10 +276,6 @@ battery = Part.makeCylinder(BAT_R, BAT_H)
 cx = cr_x + cr_radius
 cy = cr_y + cr_radius
 
-# Ajuste de cavidad más real
-CAV_D = 20.0
-CAV_H = 3.2
-
 # Nueva base correcta
 z_base = cr_z + (CR_H - CAV_H)
 
@@ -272,27 +286,33 @@ battery.translate(App.Vector(cx - BAT_R, cy - BAT_R, bz))
 
 bat_obj = doc.addObject("Part::Feature", "Battery_CR2032")
 bat_obj.Shape = battery
-bat_obj.ViewObject.ShapeColor = (0.7, 0.7, 0.7)
 
+# Color property (siempre)
+bat_obj.addProperty("App::PropertyColor", "Color", "Base", "Object color")
+bat_obj.Color = (0.7, 0.7, 0.7)
 
-
+# ViewObject solo si hay GUI
+if GUI:
+    bat_obj.ViewObject.ShapeColor = (0.7, 0.7, 0.7)
 
 # ============================
 #   RECOMPUTE Y EXPORT
 # ============================
 doc.recompute()
 
-objects = [pcb_obj, cr_obj]
+# Objetos para exportar
+export_objs = [pcb_obj, cr_obj, housing_obj, bat_obj] + pin_objs + pads_objs
 
 fcstd_path = os.path.join(BUILD_DIR, "DS3231.FCStd")
 stl_path   = os.path.join(BUILD_DIR, "DS3231.stl")
 
 doc.saveAs(fcstd_path)
-Import.export(objects, stl_path)
+Import.export(export_objs, stl_path)
 
-print("✔ PCB + Portapilas del DS3231 generados:")
+print("✔ DS3231 RTC Module generado:")
 print("   FCStd:", fcstd_path)
 print("   STL :", stl_path)
+print(f"   Componentes: PCB, Portapilas, {N_HOLES} pines, {N_HOLES} pads, Batería, Housing")
 
 if GUI:
     try:

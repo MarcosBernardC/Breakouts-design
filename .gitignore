@@ -4,6 +4,11 @@
 **/*.FCBak
 **/*.stl
 
+# KiCad footprints generados
+gen/*_auto_label.kicad_mod
+gen/*_auto_num.kicad_mod
+gen/*_holes.json
+
 # Python
 **/__pycache__/
 *.o

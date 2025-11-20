@@ -1,7 +1,0 @@
-(footprint "BME280_num" (version 20240115)
-  (generator "TARS")
-  (pad "1" thru_hole circle (at 1.19 1.4) (size 1.6 1.6) (drill 1.2) (layers "*.Cu" "*.Mask"))
-  (pad "2" thru_hole circle (at 3.73 1.4) (size 1.6 1.6) (drill 1.2) (layers "*.Cu" "*.Mask"))
-  (pad "3" thru_hole circle (at 6.27 1.4) (size 1.6 1.6) (drill 1.2) (layers "*.Cu" "*.Mask"))
-  (pad "4" thru_hole circle (at 8.81 1.4) (size 1.6 1.6) (drill 1.2) (layers "*.Cu" "*.Mask"))
-)

@@ -34,6 +34,23 @@ AGUJERO_D = 4.0
 BORDE = 0.5
 # ============================
 
+# ----------------------------
+# Helper: safe view-object setter
+# ----------------------------
+def safe_set_view(obj, **kwargs):
+    """Set attributes on obj.ViewObject if it exists (safe for headless)."""
+    vo = getattr(obj, "ViewObject", None)
+    if not vo:
+        return
+    for k, v in kwargs.items():
+        try:
+            setattr(vo, k, v)
+        except Exception:
+            # Ignore individual failures to keep script robust
+            pass
+
+# ============================
+
 doc = App.newDocument("BME280_Breakout")
 
 # --- Metadata de pinout ---
@@ -113,6 +130,115 @@ sensor = Part.makeBox(S_L, S_A, S_E)
 sensor.translate(App.Vector(sensor_x, sensor_y, sensor_z))
 
 # ============================
+#   PINES FÍSICOS
+# ============================
+
+PIN_W = 0.64
+PIN_L = 11
+PIN_NAMES = ["VIN", "GND", "SCL", "SDA"]
+
+pins_objs = []
+for i in range(N):
+    x = start_x + i * P
+    y = OFF
+
+    # Centrarlos sobre el agujero
+    px = x - PIN_W/2
+    py = y - PIN_W/2
+
+    # Van hacia abajo del PCB
+    pz = -PIN_L + 2
+
+    pin = Part.makeBox(PIN_W, PIN_W, PIN_L)
+    pin.translate(App.Vector(px, py, pz))
+
+    obj = doc.addObject("Part::Feature", f"Pin_{PIN_NAMES[i]}")
+    obj.Shape = pin
+
+    obj.addProperty("App::PropertyColor", "Color")
+    obj.Color = (0.9, 0.85, 0.3)  # doradito
+
+    safe_set_view(obj, ShapeColor=(0.9, 0.85, 0.3))
+
+    pins_objs.append(obj)
+
+# ============================
+#   ANILLOS DE SOLDADURA (PADS)
+# ============================
+
+PAD_OD = 1.6
+PAD_R = PAD_OD / 2
+PAD_H = 0.05          # grueso visible del pad
+
+hole_r = D / 2
+
+pads_objs = []
+for i in range(N):
+    x = start_x + i * P
+    y = OFF
+
+    outer = Part.makeCylinder(PAD_R, PAD_H)
+    inner = Part.makeCylinder(hole_r, PAD_H + 0.02)
+
+    ring = outer.cut(inner)
+    ring.translate(App.Vector(x, y, E))
+
+    obj = doc.addObject("Part::Feature", f"Pad_{PIN_NAMES[i]}")
+    obj.Shape = ring
+
+    obj.addProperty("App::PropertyColor", "Color")
+    obj.Color = (0.80, 0.75, 0.65)
+
+    safe_set_view(obj, ShapeColor=(0.80, 0.75, 0.65))
+
+    pads_objs.append(obj)
+
+# ============================
+#   HOUSING CON ALAS REALES (EJE X)
+# ============================
+
+HOUSING_W = 2          # profundidad del bloque (Y)
+HOUSING_H = 2          # altura bajo la PCB
+MARG = 0.8             # holgura del largo en X
+
+WING_EXTRA = 0.6       # cuánto sobresalen las alas en X
+
+# Largo total del housing (eje X)
+group_len = (N - 1) * P
+housing_len = group_len + MARG
+
+# Bloque principal: centrado en X respecto a los pines
+hx = start_x + group_len/2 - housing_len/2
+hy = OFF - HOUSING_W + 1
+hz = -HOUSING_H
+
+# --- Cuerpo central ---
+body = Part.makeBox(housing_len, HOUSING_W, HOUSING_H)
+body.translate(App.Vector(hx, hy, hz))
+
+# --- Alas (en eje X) ---
+# Ala izquierda
+wing_left = Part.makeBox(WING_EXTRA, HOUSING_W, HOUSING_H)
+wing_left.translate(App.Vector(hx - WING_EXTRA, hy, hz))
+
+# Ala derecha
+wing_right = Part.makeBox(WING_EXTRA, HOUSING_W, HOUSING_H)
+wing_right.translate(App.Vector(hx + housing_len, hy, hz))
+
+# Unión total
+housing = body.fuse(wing_left).fuse(wing_right)
+
+housing_obj = doc.addObject("Part::Feature", "HeaderHousing")
+housing_obj.Shape = housing
+
+housing_obj.addProperty("App::PropertyColor", "Color")
+housing_obj.Color = (0.05, 0.05, 0.05)
+safe_set_view(housing_obj, ShapeColor=(0.05, 0.05, 0.05))
+
+
+
+
+# ============================
 #   CREACIÓN DE OBJETOS
 # ============================
 
@@ -141,14 +267,12 @@ borde_sup_obj.Color = borde_color
 borde_inf_obj.Color = borde_color
 sensor_obj.Color = sensor_color
 
-# Colores visuales (solo si hay GUI)
-if GUI:
-    pcb_obj.ViewObject.ShapeColor = pcb_color
-    borde_sup_obj.ViewObject.ShapeColor = borde_color
-    borde_inf_obj.ViewObject.ShapeColor = borde_color
-    sensor_obj.ViewObject.ShapeColor = sensor_color
-    borde_sup_obj.ViewObject.DisplayMode = "Shaded"
-    borde_inf_obj.ViewObject.DisplayMode = "Shaded"
+# Colores visuales (solo si hay GUI) - ahora con safe_set_view
+safe_set_view(pcb_obj, ShapeColor=pcb_color)
+safe_set_view(borde_sup_obj, ShapeColor=borde_color, DisplayMode="Shaded")
+safe_set_view(borde_inf_obj, ShapeColor=borde_color, DisplayMode="Shaded")
+safe_set_view(sensor_obj, ShapeColor=sensor_color)
+
 
 doc.recompute()
 
