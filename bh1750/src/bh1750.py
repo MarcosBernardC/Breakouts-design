@@ -175,8 +175,8 @@ for i in range(N_PINS):
 # ============================
 #   HOUSING DEL HEADER (3D)
 # ============================
-HOUSING_W = 3.5
-HOUSING_H = 3
+HOUSING_W = 2
+HOUSING_H = 2
 HOUSING_MARGIN = 0.6
 
 WING_EXTRA = 0.4
