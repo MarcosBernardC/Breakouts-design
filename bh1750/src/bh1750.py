@@ -3,6 +3,8 @@ import Part
 import Import
 import os
 
+import Draft
+
 # ============================
 #   DETECTAR GUI
 # ============================
@@ -237,7 +239,7 @@ WIN_L = 1.4
 WIN_H = 0.25
 WIN_INSET = 0.05
 
-scx = L/2 - S_W/2
+scx = L/2 - S_W/2 + 1.5
 scy = A/2 - S_L/2
 scz = E
 
@@ -248,7 +250,7 @@ chip_obj = DOC.addObject("Part::Feature", "BH1750_Chip")
 chip_obj.Shape = chip
 safe_color(chip_obj, (0.05, 0.05, 0.07))
 
-win_x = L/2 - WIN_W/2
+win_x = L/2 - WIN_W/2 + 1.5
 win_y = A/2 - WIN_L/2
 win_z = scz + S_H - WIN_H + WIN_INSET
 
@@ -263,6 +265,59 @@ except:
 window_obj = DOC.addObject("Part::Feature", "BH1750_Window")
 window_obj.Shape = window
 safe_color(window_obj, (0.3, 0.7, 0.95))
+
+# --------------------------------------
+# LABELS sobre la PCB (BH1750) — MISMA LÓGICA x0/dx/y0/dy — SIN rotación
+# --------------------------------------
+
+FONT = "/usr/share/fonts/TTF/DejaVuSans.ttf"
+
+# lógica estilo BME280: array horizontal desplazado
+x0 = EDGE_X + 1.5     # ajustable
+dx = 0              # separación horizontal entre labels
+y0 = 11.0              # altura base del texto
+dy = -2.5               # no variamos Y en este caso (fila horizontal)
+
+LABEL_SIZE = 1.0
+LABEL_Z = E
+
+# Usamos tu orden de pines BH1750
+labels = [
+    ("ADDR", "LBL_ADDR"),
+    ("SDA",  "LBL_SDA"),
+    ("SCL",  "LBL_SCL"),
+    ("GND",  "LBL_GND"),
+    ("VCC",  "LBL_VCC")
+]
+
+for i, (text, name) in enumerate(labels):
+
+    pos = App.Vector(
+        x0 + i*dx,
+        y0 + i*dy,
+        LABEL_Z
+    )
+
+    txt = Draft.makeShapeString(
+        String=text,
+        FontFile=FONT,
+        Size=LABEL_SIZE,
+        Tracking=0
+    )
+
+    # posición SIN rotación — coherente con tu petición
+    txt.Placement = App.Placement(
+        pos,
+        App.Rotation()
+    )
+
+    DOC.recompute()
+
+    solid = txt.Shape.extrude(App.Vector(0, 0, 0.03))
+
+    obj = DOC.addObject("Part::Feature", name)
+    obj.Shape = solid
+    safe_color(obj, (0.99, 0.99, 0.99))
 
 # ============================
 #   RECOMPUTE

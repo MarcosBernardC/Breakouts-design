@@ -3,6 +3,8 @@ import Part
 import Import
 import os
 
+import Draft
+
 GUI = App.GuiUp
 if GUI:
     import FreeCADGui as Gui
@@ -15,7 +17,7 @@ os.makedirs(BUILD_DIR, exist_ok=True)
 #   PARÁMETROS DEL BREAKOUT
 # ============================
 L = 10.0
-A = 12.0
+A = 13.0
 E = 1.6
 
 # Pines
@@ -235,7 +237,52 @@ housing_obj.addProperty("App::PropertyColor", "Color")
 housing_obj.Color = (0.05, 0.05, 0.05)
 safe_set_view(housing_obj, ShapeColor=(0.05, 0.05, 0.05))
 
+# --------------------------------------
+# LABELS sobre la PCB (orientadas CCW desde origen)
+# --------------------------------------
 
+FONT = "/usr/share/fonts/TTF/DejaVuSans.ttf"
+
+x0 = 9.2
+dx = -2.5
+y0 = 2.5
+dy = -2
+
+labels = [
+    ("SDA", "Text_SDA"),
+    ("SCL", "Text_SCL"),
+    ("GND", "Text_GND"),
+    ("VIN", "Text_VIN")
+]
+
+for i, (text, name) in enumerate(labels):
+    pos = App.Vector(x0 + i*dx, y0, E)
+
+    txt = Draft.makeShapeString(
+        String=text,
+        FontFile=FONT,
+        Size=1,
+        Tracking=0
+    )
+
+    # placement completo desde origen: posición + rotación CCW 90°
+    txt.Placement = App.Placement(
+        pos,
+        App.Rotation(App.Vector(0,0,1), 90)
+    )
+
+    doc.recompute()
+
+    solid = txt.Shape.extrude(App.Vector(0, 0, 0.01))
+
+    obj = doc.addObject("Part::Feature", name)
+    obj.Shape = solid
+
+    obj.addProperty("App::PropertyColor", "Color")
+    obj.Color = (0.99, 0.99, 0.99)
+    safe_set_view(obj, ShapeColor=(0.99, 0.99, 0.99))
+
+doc.recompute()
 
 
 # ============================

@@ -295,6 +295,58 @@ bat_obj.Color = (0.7, 0.7, 0.7)
 if GUI:
     bat_obj.ViewObject.ShapeColor = (0.7, 0.7, 0.7)
 
+# --------------------------------------
+# LABELS sobre la PCB (DS3231 rotados 270° / -90°)
+# --------------------------------------
+
+import Draft
+
+FONT = "/usr/share/fonts/TTF/DejaVuSans.ttf"
+
+PIN_LABELS = ["32K", "SQW", "SCL", "SDA", "VCC", "GND"]
+
+LABEL_SIZE = 1.3
+LABEL_Z = E
+
+x0 = hx0 - 1
+dx = HOLE_SPACING
+y0 = (A - EDGE_Y) - 2
+dy = 0
+
+for i, text in enumerate(PIN_LABELS):
+
+    pos = App.Vector(
+        x0 + i*dx,
+        y0 + i*dy,
+        LABEL_Z
+    )
+
+    txt = Draft.makeShapeString(
+        String=text,
+        FontFile=FONT,
+        Size=LABEL_SIZE,
+        Tracking=0
+    )
+
+    # rotación 270° CCW = -90°
+    txt.Placement = App.Placement(
+        pos,
+        App.Rotation(App.Vector(0, 0, 1), -90)
+    )
+
+    doc.recompute()
+
+    solid = txt.Shape.extrude(App.Vector(0, 0, 0.03))
+
+    obj = doc.addObject("Part::Feature", f"Label_{text}")
+    obj.Shape = solid
+
+    obj.addProperty("App::PropertyColor", "Color")
+    obj.Color = (0.99, 0.99, 0.99)
+
+    if GUI:
+        obj.ViewObject.ShapeColor = (0.99, 0.99, 0.99)
+
 # ============================
 #   RECOMPUTE Y EXPORT
 # ============================
