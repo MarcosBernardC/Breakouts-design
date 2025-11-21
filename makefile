@@ -305,6 +305,15 @@ wrl: $(MODULES_WRL)
 	@echo "✔ Todos los archivos WRL generados."
 
 # ======================================
+#   DEPENDENCIAS DE EXPORTACIÓN
+# ======================================
+# Asegurar que el FCStd esté actualizado antes de exportar
+$(MODULES_HOLES): %_holes: %
+$(MODULES_FOOTPRINT): %_footprint: %_holes
+$(MODULES_STEPS): %_steps: %
+$(MODULES_WRL): %_wrl: %
+
+# ======================================
 #   TARGETS COMBINADOS POR MÓDULO
 # ======================================
 MODULES_ALL := $(addsuffix _all,$(MODULES))

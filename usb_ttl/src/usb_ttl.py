@@ -3,6 +3,9 @@ import Part
 import Import
 import os
 
+import Draft
+
+
 # ============================
 #   TTL-USB BASE: PCB + PINES
 # ============================
@@ -42,7 +45,7 @@ A = 15.0
 E = 1.6
 pcb_color = (0.03, 0.03, 0.03)
 
-DOC = App.newDocument("TTL_USB_BASE")
+DOC = App.newDocument("USB_TTL_BASE")
 
 pcb = Part.makeBox(L, A, E)
 pcb_obj = DOC.addObject("Part::Feature", "PCB")
@@ -112,7 +115,7 @@ for i in range(N_PINS):
 # --------------------------------------
 
 usblen, usbw, usbh = 19, 11, 4
-usb_pos = App.Vector(18, 2, 1.6)
+usb_pos = App.Vector(24, 2, 1.6)
 
 # Sólido del USB
 usb_solid = Part.makeBox(usblen, usbw, usbh)
@@ -155,7 +158,7 @@ tongue_h   = cav_h   - 2      # más bajita
 # posición: centrada en Y y Z, y un poco adentro desde el frente
 tongue_x = usblen - tongue_len - 0.4     # ligeramente retrasada desde la boca
 tongue_y = (usbw - tongue_w) / 2
-tongue_z = (usbh - tongue_h) / 0.5 - 4.9
+tongue_z = (usbh - tongue_h) / 0.5 - 4.1
 
 tongue_solid = Part.makeBox(tongue_len, tongue_w, tongue_h)
 tongue_solid.translate(usb_pos + App.Vector(tongue_x, tongue_y, tongue_z))
@@ -231,12 +234,206 @@ usb.Shape = usb.Shape.cut(h2)
 
 
 # --------------------------------------
+# CHIP QFN-28 (4x4 mm, 7 pines por lado)
+# --------------------------------------
+
+chip_size = 4.0
+chip_h    = 0.9
+chip_x    = 13.5     # posición X en PCB (ajusta a gusto)
+chip_y    = 5
+chip_z    = E
+
+chip_pos = App.Vector(chip_x, chip_y, chip_z)
+
+# Cuerpo del chip
+chip_body = Part.makeBox(chip_size, chip_size, chip_h)
+chip_body.translate(chip_pos)
+
+chip_obj = DOC.addObject("Part::Feature", "QFN28_Body")
+chip_obj.Shape = chip_body
+safe_color(chip_obj, (0.08, 0.08, 0.10))
+
+
+# --------------------------------------
+# Pines SMD QFN
+# --------------------------------------
+
+pins_per_side = 7
+pin_len = 0.6       # cuanto sobresale el pad
+pin_w   = 0.25
+pin_h   = 0.1
+pitch   = 0.5
+
+pins_objs = []
+pin_index = 1
+
+# Offset interno para centrar pads
+side_inner_offset = (chip_size - ((pins_per_side - 1) * pitch)) / 2
+
+# ------------------------------
+# LADO +X
+# ------------------------------
+for i in range(pins_per_side):
+    px = chip_x + chip_size
+    py = chip_y + side_inner_offset + i*pitch - pin_w/2
+    pz = chip_z
+
+    pin = Part.makeBox(pin_len, pin_w, pin_h)
+    pin.translate(App.Vector(px, py, pz))
+
+    obj = DOC.addObject("Part::Feature", f"QFN_Pin_{pin_index}")
+    obj.Shape = pin
+    safe_color(obj, (0.85, 0.82, 0.55))
+
+    obj.addProperty("App::PropertyString", "PinName", "PinData", "QFN Pin")
+    obj.PinName = f"P{pin_index}"
+
+    pins_objs.append(obj)
+    pin_index += 1
+
+
+# ------------------------------
+# LADO -X
+# ------------------------------
+for i in range(pins_per_side):
+    px = chip_x - pin_len
+    py = chip_y + side_inner_offset + i*pitch - pin_w/2
+    pz = chip_z
+
+    pin = Part.makeBox(pin_len, pin_w, pin_h)
+    pin.translate(App.Vector(px, py, pz))
+
+    obj = DOC.addObject("Part::Feature", f"QFN_Pin_{pin_index}")
+    obj.Shape = pin
+    safe_color(obj, (0.85, 0.82, 0.55))
+
+    obj.addProperty("App::PropertyString", "PinName", "PinData", "QFN Pin")
+    obj.PinName = f"P{pin_index}"
+
+    pins_objs.append(obj)
+    pin_index += 1
+
+
+# ------------------------------
+# LADO +Y
+# ------------------------------
+for i in range(pins_per_side):
+    px = chip_x + side_inner_offset + i*pitch - pin_w/2
+    py = chip_y + chip_size
+    pz = chip_z
+
+    pin = Part.makeBox(pin_w, pin_len, pin_h)
+    pin.translate(App.Vector(px, py, pz))
+
+    obj = DOC.addObject("Part::Feature", f"QFN_Pin_{pin_index}")
+    obj.Shape = pin
+    safe_color(obj, (0.85, 0.82, 0.55))
+
+    obj.addProperty("App::PropertyString", "PinName", "PinData", "QFN Pin")
+    obj.PinName = f"P{pin_index}"
+
+    pins_objs.append(obj)
+    pin_index += 1
+
+
+# ------------------------------
+# LADO -Y
+# ------------------------------
+for i in range(pins_per_side):
+    px = chip_x + side_inner_offset + i*pitch - pin_w/2
+    py = chip_y - pin_len
+    pz = chip_z
+
+    pin = Part.makeBox(pin_w, pin_len, pin_h)
+    pin.translate(App.Vector(px, py, pz))
+
+    obj = DOC.addObject("Part::Feature", f"QFN_Pin_{pin_index}")
+    obj.Shape = pin
+    safe_color(obj, (0.85, 0.82, 0.55))
+
+    obj.addProperty("App::PropertyString", "PinName", "PinData", "QFN Pin")
+    obj.PinName = f"P{pin_index}"
+
+    pins_objs.append(obj)
+    pin_index += 1
+
+
+# --------------------------------------
+# LABELS sobre la PCB
+# --------------------------------------
+
+FONT = "/usr/share/fonts/TTF/DejaVuSans.ttf"
+
+# Y inicial del primero
+y0 = 12
+dy = -2  # bajar 2 mm cada label
+
+labels = [
+    ("3V3", "Text_3V3"),
+    ("GND", "Text_GND"),
+    ("+5V", "Text_5V"),
+    ("TXD", "Text_TXD"),
+    ("RXD", "Text_RXD"),
+    ("DTR", "Text_DTR")
+]
+
+for i, (text, name) in enumerate(labels):
+    pos = App.Vector(4, y0 + i*dy, E)
+
+    txt = Draft.makeShapeString(
+        String=text,
+        FontFile=FONT,
+        Size=1,
+        Tracking=0
+    )
+    txt.Placement.Base = pos
+    DOC.recompute()
+
+    solid = txt.Shape.extrude(App.Vector(0, 0, 0.01))
+
+    obj = DOC.addObject("Part::Feature", name)
+    obj.Shape = solid
+
+    # serigrafía blanca
+    safe_color(obj, (0.99, 0.99, 0.99))
+
+DOC.recompute()
+
+
+# --------------------------------------
+# HOUSING PLÁSTICO DEL HEADER (CORREGIDO)
+# --------------------------------------
+
+import Part
+
+N = 6                 # pines
+PITCH = 2.00          # tu pitch real (tienes 2.00, no 2.54)
+H = 2.5               # altura del plástico
+W = 2.6               # ancho del housing en X (2.54 clásico)
+L = N * PITCH         # largo total sobre Y
+
+# tu fila empieza en EDGE_X y py0
+hx = EDGE_X - W/2
+hy = py0 - 1        # pequeño margen para centrar
+hz = -(H)             # justo bajo la PCB (Z=0 es top-bottom del PCB)
+
+housing = Part.makeBox(W, L, H)     # ojo: ahora W = X, L = Y
+
+housing_obj = DOC.addObject("Part::Feature", "Header_Housing")
+housing_obj.Shape = housing
+housing_obj.Placement.Base = App.Vector(hx, hy, hz)
+
+safe_color(housing_obj, (0.98, 0.91, 0.07))
+
+DOC.recompute()
+
+# --------------------------------------
 # FINAL
 # --------------------------------------
 DOC.recompute()
 
-fcstd_path = os.path.join(BUILD_DIR, "ttl_usb_base.FCStd")
-stl_path   = os.path.join(BUILD_DIR, "ttl_usb_base.stl")
+fcstd_path = os.path.join(BUILD_DIR, "usb_ttl.FCStd")
+stl_path   = os.path.join(BUILD_DIR, "usb_ttl.stl")
 
 DOC.saveAs(fcstd_path)
 Import.export([pcb_obj], stl_path)
